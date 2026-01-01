@@ -256,13 +256,7 @@ def get_ml_engine():
 
 @st.cache_data(ttl=300)
 def get_stock_data(symbol: str, period: str, interval: str) -> Optional[StockData]:
-    try:
-        data = DataEngine.fetch_data(symbol, period, interval)
-        if not data: return None
-        return data
-    except Exception as e:
-        logger.error(f"Data fetch error for {symbol}: {e}")
-        return None
+    return DataEngine.fetch_data(symbol, period, interval)
 
 def get_prediction(stock_data: StockData) -> Optional[PredictionResult]:
     """Get ML prediction with error handling"""
@@ -329,11 +323,6 @@ def run_analysis_pipeline(symbol: str, period: str, interval: str):
             st.write("📡 Connecting to market data API...")
             stock_data = get_stock_data(clean_symbol, period, interval)
             
-            if not stock_data:
-                status.update(label="❌ Data Fetch Failed", state="error")
-                st.error(f"Could not retrieve data for {clean_symbol}. Please check the symbol and try again.")
-                return
-
             # Step 2: ML prediction
             st.write("🧠 Running AI prediction models...")
             ml_signal = get_prediction(stock_data)
@@ -351,8 +340,8 @@ def run_analysis_pipeline(symbol: str, period: str, interval: str):
             logger.info(f"Successfully analyzed {clean_symbol}")
             
         except Exception as e:
-            status.update(label="❌ Pipeline Error", state="error")
-            st.error(f"Unexpected error: {str(e)}")
+            status.update(label="❌ Analysis Failed", state="error")
+            st.error(f"Error: {str(e)}")
             logger.error(f"Pipeline error for {clean_symbol}: {e}", exc_info=True)
             return
 
@@ -603,58 +592,7 @@ def render_market_pulse(stock_data: Optional[StockData]):
         st.metric("Low", f"${(snapshot['low'] or 0):.2f}")
 
 
-def render_confidence_extras(signal: PredictionResult):
-    """Enhanced confidence display with better visual hierarchy"""
-    
-    # Confidence visualization with color coding
-    confidence_val = min(int(signal.confidence), 100)
-    confidence_color = "#22c55e" if confidence_val >= 80 else "#f59e0b" if confidence_val >= 60 else "#ef4444"
-    
-    st.markdown(
-        f"""
-        <div style="background: rgba(15, 23, 42, 0.6); border-radius: 16px; padding: 20px; 
-             border: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px;">
-            <div style="font-size: 16px; font-weight: 800; color: #f1f5f9; margin-bottom: 12px;">📊 Confidence Breakdown</div>
-            <div style="font-size: 14px; color: #cbd5e1; margin-bottom: 8px;">Model Certainty</div>
-            <div style="font-size: 28px; font-weight: 700; color: {confidence_color}; margin-bottom: 8px;">{signal.confidence:.1f}%</div>
-            <div style="background: rgba(255,255,255,0.1); border-radius: 8px; height: 12px; overflow: hidden;">
-                <div style="background: {confidence_color}; height: 100%; width: {confidence_val}%; 
-                     transition: width 0.5s ease; border-radius: 8px;"></div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
-    # Split indicators and schedule into two columns
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("""
-        <div style="background: rgba(15, 23, 42, 0.6); border-radius: 16px; padding: 20px; 
-             border: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 14px; font-weight: 800; color: #f1f5f9; margin-bottom: 12px;">🎯 Key Indicators</div>
-            <ul style="color: #cbd5e1; line-height: 1.8; padding-left: 20px; margin: 0;">
-                <li>RSI momentum analysis</li>
-                <li>MACD crossover signals</li>
-                <li>50/200-day MA trends</li>
-                <li>Volume dynamics (OBV)</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("""
-        <div style="background: rgba(15, 23, 42, 0.6); border-radius: 16px; padding: 20px; 
-             border: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 14px; font-weight: 800; color: #f1f5f9; margin-bottom: 12px;">⏰ Update Schedule</div>
-            <ul style="color: #cbd5e1; line-height: 1.8; padding-left: 20px; margin: 0;">
-                <li>End-of-day refresh</li>
-                <li>Daily close analysis</li>
-                <li>Alert-ready format</li>
-                <li>Auto-refresh enabled</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
 
 # --- Main Application ---
 
@@ -671,7 +609,6 @@ INFO_BOX = """
 def rsi_explanation():
     st.markdown(
         """
-        <div class="glass-card">
             <div style="font-size:14px; line-height:1.7; color:rgba(255,255,255,0.85)">
                 <strong style="font-size:16px; color:#fff;">
                     RSI (Relative Strength Index)
@@ -682,7 +619,6 @@ def rsi_explanation():
                     <li><span style="color:#ffd700; font-weight:600;">30–70</span>: Neutral zone</li>
                 </ul>
             </div>
-        </div>
         """,
         unsafe_allow_html=True
     )
@@ -690,7 +626,6 @@ def rsi_explanation():
 def macd_explanation():
     st.markdown(
         """
-        <div class="glass-card">
             <div style="font-size: 14px; color: rgba(255, 255, 255, 0.85); line-height: 1.7;">
                 <strong style="font-size: 16px; color: #fff;">MACD (Moving Average Convergence Divergence)</strong>
                 <ul style="margin: 12px 0 0 18px; padding: 0; list-style: disc;">
@@ -699,7 +634,6 @@ def macd_explanation():
                     <li><span style="color: #ffd700; font-weight: 600;">Histogram</span>: Shows momentum strength and direction</li>
                 </ul>
             </div>
-        </div>
         """,
         unsafe_allow_html=True
     )
@@ -734,9 +668,6 @@ def main():
         with tab2:
             st.markdown("""<div style='margin-top: 10px;'></div>""", unsafe_allow_html=True)
             render_prediction_card(ml_signal)
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            render_confidence_extras(ml_signal)
 
         with tab3:
             st.markdown("### 🎯 Technical Indicators")

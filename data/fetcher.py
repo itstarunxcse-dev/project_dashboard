@@ -15,10 +15,12 @@ class DataEngine:
         import streamlit as st
         
         @st.cache_data(ttl=300, show_spinner=False)
-        def _fetch_cached(symbol: str, period: str, interval: str) -> StockData:
-            return DataEngine._fetch_uncached(symbol, period, interval)
+        def _fetch_cached(symbol: str, period: str, interval: str) -> dict:
+            data = DataEngine._fetch_uncached(symbol, period, interval)
+            return data.dict()
         
-        return _fetch_cached(symbol, period, interval)
+        data_dict = _fetch_cached(symbol, period, interval)
+        return StockData(**data_dict)
     
     @staticmethod
     def _fetch_uncached(symbol: str, period: str, interval: str) -> StockData:
@@ -46,9 +48,15 @@ class DataEngine:
             df = df.fillna(0)
             
             # Get latest info
-            info = ticker.info
-            current_price = info.get('currentPrice', df['Close'].iloc[-1])
-            prev_close = info.get('previousClose', df['Close'].iloc[-2])
+            try:
+                info = ticker.info
+                current_price = info.get('currentPrice', df['Close'].iloc[-1])
+                prev_close = info.get('previousClose', df['Close'].iloc[-2] if len(df) > 1 else df['Close'].iloc[-1])
+            except Exception:
+                # Fallback if info fetch fails
+                current_price = df['Close'].iloc[-1]
+                prev_close = df['Close'].iloc[-2] if len(df) > 1 else df['Close'].iloc[-1]
+
             price_change = current_price - prev_close
             price_change_pct = (price_change / prev_close) * 100 if prev_close else 0
             
@@ -68,7 +76,7 @@ class DataEngine:
                 highs=df['High'].tolist(),
                 lows=df['Low'].tolist(),
                 closes=df['Close'].tolist(),
-                volumes=df['Volume'].tolist(),
+                volumes=df['Volume'].astype(int).tolist(),
                 rsi=df['RSI'].tolist(),
                 sma_20=df['SMA_20'].tolist(),
                 sma_50=df['SMA_50'].tolist(),

@@ -104,6 +104,17 @@ class BacktestMetrics(BaseModel):
     avg_trade_return: float  # Percentage
     volatility: float  # Percentage (annualized)
     cagr: float  # Percentage (Compound Annual Growth Rate)
+    confidence_ratio: float # Confidence level of the strategy
+
+    # Market Metrics (Benchmark)
+    market_total_return: float
+    market_annual_return: float
+    market_volatility: float
+    market_sharpe_ratio: float
+    market_max_drawdown: float
+    alpha: float
+    beta: float
+    information_ratio: float
     
     # Entry/Exit Logic
     entry_rule: str
@@ -116,6 +127,7 @@ class BacktestMetrics(BaseModel):
     drawdown_curve: List[float]
     returns: List[float]  # Daily returns for analysis
     dates: List[str]
+    volumes: List[int] # Volume data for visualization
     monthly_returns: Dict[str, float]  # "YYYY-MM": return_pct
     
     # Trade History

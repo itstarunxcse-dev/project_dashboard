@@ -49,34 +49,56 @@ class BacktestEngine:
         market_cumulative = (1 + market_returns).cumprod()
         market_equity = (initial_capital * market_cumulative).tolist()
         
-        # Performance Metrics
-        total_return = (final_equity / initial_capital - 1) * 100
-        
-        # Calculate CAGR (Compound Annual Growth Rate)
+        # --- Time Definitions ---
         days = len(df)
         years = days / 252  # Assuming 252 trading days per year
+        
+        # --- Strategy Performance Metrics ---
+        total_return = (final_equity / initial_capital - 1) * 100
         cagr = ((final_equity / initial_capital) ** (1 / years) - 1) * 100 if years > 0 else 0
         annual_return = cagr  # Same as CAGR
         
-        # Volatility (Annualized)
         volatility = df['Strategy_Returns'].std() * np.sqrt(252) * 100 if df['Strategy_Returns'].std() != 0 else 0
         
-        # Win Rate
         winning_trades = len(df[df['Strategy_Returns'] > 0])
         total_active_trades = len(df[df['Strategy_Returns'] != 0])
         win_rate = (winning_trades / total_active_trades * 100) if total_active_trades > 0 else 0
         
-        # Max Drawdown & Drawdown Curve
         peak = (initial_capital * cumulative_returns).expanding(min_periods=1).max()
         drawdown = ((initial_capital * cumulative_returns) / peak - 1) * 100
         drawdown_curve = drawdown.tolist()
         max_drawdown = drawdown.min()
         
-        # Sharpe Ratio (assuming risk-free rate = 0)
         sharpe_ratio = (df['Strategy_Returns'].mean() / df['Strategy_Returns'].std() * np.sqrt(252)) if df['Strategy_Returns'].std() != 0 else 0
         
-        # Average Trade Return
         avg_trade_return = df[df['Position_Change'] > 0]['Strategy_Returns'].mean() * 100 if len(df[df['Position_Change'] > 0]) > 0 else 0
+
+        # --- Market Metrics ---
+        market_total_return = (market_equity[-1] / initial_capital - 1) * 100
+        market_annual_return = ((market_equity[-1] / initial_capital) ** (1 / years) - 1) * 100 if years > 0 else 0
+        market_volatility = market_returns.std() * np.sqrt(252) * 100 if market_returns.std() != 0 else 0
+        market_sharpe_ratio = (market_returns.mean() / market_returns.std() * np.sqrt(252)) if market_returns.std() != 0 else 0
+        
+        market_peak = (initial_capital * market_cumulative).expanding(min_periods=1).max()
+        market_drawdown = ((initial_capital * market_cumulative) / market_peak - 1) * 100
+        market_max_drawdown = market_drawdown.min()
+        
+        # Alpha & Beta
+        covariance = np.cov(df['Strategy_Returns'].fillna(0), market_returns)[0][1]
+        market_variance = market_returns.var()
+        beta = covariance / market_variance if market_variance != 0 else 1.0
+        alpha = annual_return - (0 + beta * (market_annual_return - 0)) # CAPM Alpha (Risk Free = 0)
+        
+        # Information Ratio
+        active_returns = df['Strategy_Returns'].fillna(0) - market_returns
+        tracking_error = active_returns.std() * np.sqrt(252)
+        information_ratio = (active_returns.mean() * 252) / tracking_error if tracking_error != 0 else 0
+        
+        # Confidence Ratio (Simulated based on MACD strength at entry)
+        # We'll normalize the MACD histogram by price to get a relative strength
+        df['Signal_Strength'] = (df['MACD'] - df['Signal']).abs() / df['Close']
+        confidence_ratio = df[df['Target'] == 1]['Signal_Strength'].mean() * 1000 # Scale up for readability (0-100 range approx)
+        if np.isnan(confidence_ratio): confidence_ratio = 50.0 # Default
         
         # Returns list for detailed analysis
         returns_list = df['Strategy_Returns'].fillna(0).tolist()
@@ -159,6 +181,18 @@ class BacktestEngine:
             volatility=float(volatility),
             sharpe_ratio=float(sharpe_ratio),
             avg_trade_return=float(avg_trade_return),
+            confidence_ratio=float(confidence_ratio),
+            
+            # Market Metrics
+            market_total_return=float(market_total_return),
+            market_annual_return=float(market_annual_return),
+            market_volatility=float(market_volatility),
+            market_sharpe_ratio=float(market_sharpe_ratio),
+            market_max_drawdown=float(market_max_drawdown),
+            alpha=float(alpha),
+            beta=float(beta),
+            information_ratio=float(information_ratio),
+            
             entry_rule="Buy when Target = 1 (MACD > Signal)",
             exit_rule="Close position when Target = 0 (MACD < Signal)",
             position_strategy="No short selling implemented",
@@ -167,6 +201,7 @@ class BacktestEngine:
             drawdown_curve=drawdown_curve,
             returns=returns_list,
             dates=data.dates,
+            volumes=data.volumes,
             monthly_returns=monthly_returns_dict,
             trades=trades,
             prices=data.closes,

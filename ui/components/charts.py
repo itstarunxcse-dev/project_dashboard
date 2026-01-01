@@ -104,7 +104,6 @@ def render_price_chart(data: StockData):
     Renders the OHLCV chart inside a glass container.
     """
     # Start Glass Card Wrapper
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     render_chart_header("Price Action & Volume Analysis", "📈")
 
     # Create Subplots
@@ -154,7 +153,6 @@ def render_price_chart(data: StockData):
     
     # Render with Streamlit
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    st.markdown('</div>', unsafe_allow_html=True) # End Card
 
 def render_rsi_chart(data: StockData):
     """
@@ -426,5 +424,46 @@ def render_equity_comparison(dates, market_equity, strategy_equity, buy_signals=
     # Update y-axis labels
     fig.update_yaxes(title_text="Equity ($)", row=1, col=1)
     fig.update_yaxes(title_text="Activity", row=2, col=1, showticklabels=False)
+    
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+def render_profit_loss_chart(dates, returns):
+    """
+    Renders a bar chart of daily profit/loss.
+    """
+    render_chart_header("Daily Profit/Loss", "📊")
+    
+    colors = [COLORS['neon_green'] if r >= 0 else COLORS['neon_red'] for r in returns]
+    
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=dates,
+        y=returns,
+        marker_color=colors,
+        name='Daily Return'
+    ))
+    
+    _update_fig_layout(fig, height=350)
+    fig.update_yaxes(title_text="Return", tickformat=".2%")
+    
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+def render_volume_chart(dates, volumes):
+    """
+    Renders a volume chart.
+    """
+    render_chart_header("Trading Volume", "📊")
+    
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=dates,
+        y=volumes,
+        marker_color=COLORS['neon_blue'],
+        opacity=0.6,
+        name='Volume'
+    ))
+    
+    _update_fig_layout(fig, height=300)
+    fig.update_yaxes(title_text="Volume")
     
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})

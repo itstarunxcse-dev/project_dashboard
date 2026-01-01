@@ -42,7 +42,9 @@ from ui.components.charts import (
     render_equity_curve,
     render_equity_comparison,
     render_drawdown_chart,
-    render_price_with_trades_chart
+    render_price_with_trades_chart,
+    render_profit_loss_chart,
+    render_volume_chart
 )
 from ui.components.indicators import (
     render_indicators_panel,
@@ -52,8 +54,7 @@ from ui.components.metrics import (
     render_metrics,
     render_strategy_config,
     render_signal_logic,
-    render_trade_history,
-    render_data_scope
+    render_trade_history
 )
 from ui.components.export import export_data_section
 from data.fetcher import DataEngine
@@ -138,11 +139,6 @@ def handle_missing_data():
 # BACKTEST RENDERING
 # ======================================================
 def render_backtest(metrics):
-    st.markdown("### 🧠 Strategy Logic")
-    render_strategy_config(metrics)
-    render_signal_logic(metrics)
-
-    st.markdown("---")
     st.markdown("### 📊 Performance Metrics")
     render_metrics(metrics)
 
@@ -159,25 +155,11 @@ def render_backtest(metrics):
     )
     
     st.markdown("---")
-    st.markdown("### 📉 Drawdown & Risk Analysis")
     col1, col2 = st.columns(2)
     with col1:
-        render_drawdown_chart(metrics.dates, metrics.drawdown_curve)
+        render_profit_loss_chart(metrics.dates, metrics.returns)
     with col2:
-        render_equity_curve(metrics.dates, metrics.equity_curve)
-
-    st.markdown("---")
-    st.markdown("### 🎯 Trade Execution Details")
-    render_price_with_trades_chart(
-        metrics.dates,
-        metrics.prices,
-        metrics.buy_signals,
-        metrics.sell_signals
-    )
-
-    st.markdown("---")
-    render_trade_history(metrics)
-    render_data_scope(metrics)
+        render_volume_chart(metrics.dates, metrics.volumes)
 
 # ======================================================
 # MAIN

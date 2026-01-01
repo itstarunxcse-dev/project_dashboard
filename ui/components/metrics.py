@@ -200,6 +200,77 @@ def render_metrics(metrics: BacktestMetrics):
             </div>
         """, unsafe_allow_html=True)
 
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Third Row - Confidence & Market Metrics
+    st.markdown("### 🛡️ Risk & Benchmark Analysis")
+    
+    col9, col10, col11, col12 = st.columns(4)
+    
+    with col9:
+        st.markdown(f"""
+            <div class="metric-box">
+                <div class="metric-label">Confidence Ratio</div>
+                <div class="metric-value" style="color: #00ff7f; background: none; -webkit-text-fill-color: #00ff7f;">
+                    {metrics.confidence_ratio:.2f}
+                </div>
+            </div>
+            <div class="metric-box" style="margin-top: 15px;">
+                <div class="metric-label">Alpha</div>
+                <div class="metric-value" style="color: #ff6347; background: none; -webkit-text-fill-color: #ff6347;">
+                    {metrics.alpha:.2f}%
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+    with col10:
+        st.markdown(f"""
+            <div class="metric-box">
+                <div class="metric-label">Beta</div>
+                <div class="metric-value" style="color: #ffd700; background: none; -webkit-text-fill-color: #ffd700;">
+                    {metrics.beta:.2f}
+                </div>
+            </div>
+            <div class="metric-box" style="margin-top: 15px;">
+                <div class="metric-label">Info Ratio</div>
+                <div class="metric-value" style="color: #667eea; background: none; -webkit-text-fill-color: #667eea;">
+                    {metrics.information_ratio:.2f}
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+    with col11:
+        st.markdown(f"""
+            <div class="metric-box">
+                <div class="metric-label">Market Return</div>
+                <div class="metric-value" style="color: white; background: none; -webkit-text-fill-color: white;">
+                    {metrics.market_total_return:.2f}%
+                </div>
+            </div>
+            <div class="metric-box" style="margin-top: 15px;">
+                <div class="metric-label">Market Volatility</div>
+                <div class="metric-value" style="color: rgba(255, 255, 255, 0.7); background: none; -webkit-text-fill-color: rgba(255, 255, 255, 0.7);">
+                    {metrics.market_volatility:.2f}%
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+    with col12:
+        st.markdown(f"""
+            <div class="metric-box">
+                <div class="metric-label">Market Sharpe</div>
+                <div class="metric-value" style="color: white; background: none; -webkit-text-fill-color: white;">
+                    {metrics.market_sharpe_ratio:.2f}
+                </div>
+            </div>
+            <div class="metric-box" style="margin-top: 15px;">
+                <div class="metric-label">Market Drawdown</div>
+                <div class="metric-value" style="color: #ff6347; background: none; -webkit-text-fill-color: #ff6347;">
+                    {metrics.market_max_drawdown:.2f}%
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
 def render_trade_history(metrics: BacktestMetrics):
     """
     Display Trade History Table
